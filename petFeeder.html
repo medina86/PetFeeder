@@ -1,0 +1,336 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IoT Hranilica</title>
+</head>
+<body>
+  <h1>Kontrola Hranilice</h1>
+ 
+  <button id="otvoriBtn" onclick="otvoriHranilicu()">Otvori Hranilicu</button>
+  
+  <script type="module">
+    // Import Firebase funkcija
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+
+    // Firebase konfiguracija
+    const firebaseConfig = {
+      apiKey: "AIzaSyDjiaaIxCXxoq7xeZGmiINZ1Jl3bp3WbaI",
+      authDomain: "petfeeder-a3ad9.firebaseapp.com",
+      databaseURL: "https://petfeeder-a3ad9-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "petfeeder-a3ad9",
+      storageBucket: "petfeeder-a3ad9.firebasestorage.app",
+      messagingSenderId: "797876743482",
+      appId: "1:797876743482:web:fe1241ff2b99c4578d3403",
+    };
+
+    // Inicijalizacija Firebase-a
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // Funkcija za otvaranje hranilice
+    window.otvoriHranilicu = function() {
+      const komandaRef = ref(database, "hranilica/komanda"); // Koristi 'ref' iz Firebase SDK
+      set(komandaRef, "open")
+        .then(() => {
+          alert("Komanda za otvaranje hranilice poslana!");
+        })
+        .catch((error) => {
+          console.error("Greška pri slanju komande:", error);
+          alert("Došlo je do greške. Pokušajte ponovo.");
+        });
+    };
+  
+  </script>
+
+
+
+
+  <!-- <script type="module">
+    // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDjiaaIxCXxoq7xeZGmiINZ1Jl3bp3WbaI",
+  authDomain: "petfeeder-a3ad9.firebaseapp.com",
+  databaseURL: "https://petfeeder-a3ad9-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "petfeeder-a3ad9",
+  storageBucket: "petfeeder-a3ad9.firebasestorage.app",
+  messagingSenderId: "797876743482",
+  appId: "1:797876743482:web:fe1241ff2b99c4578d3403",
+  measurementId: "G-YTZDGXYDV7"
+};
+
+    // Inicijalizacija Firebase aplikacije
+    const app = initializeApp(firebaseConfig);
+
+    // Povezivanje sa Realtime Database
+    const database = getDatabase(app);
+
+    // Funkcionalnost dugmeta
+    document.getElementById("otvoriBtn").addEventListener("click", () => {
+      const refKomanda = ref(database, "hranilica/komanda");
+      set(refKomanda, "otvori")
+        .then(() => {
+          alert("Komanda 'otvori' uspješno poslata!");
+        })
+        .catch((error) => {
+          console.error("Greška pri slanju komande:", error);
+        });
+    });
+
+  </script> 
+</body>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin-top: 50px;
+  }
+  button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  button:hover {
+    background-color: #45a049;
+  }
+</style>
+
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IoT Hranilica</title>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Kontrola Hranilice</h1>
+      <button id="otvoriBtn" onclick="otvoriHranilicu()">Otvori Hranilicu</button>
+    </div>
+  
+    <div id="lastMessage">
+      <h2>Posljednje otvaranje hranilice:</h2>
+      <p id="messageContent">Hranilica se otvarala u 01-12-2024 16:11:48</p>
+    </div>
+  
+    <div id="timerSection">
+      <h2>Postavi automatsko otvaranje hranilice</h2>
+      <input type="datetime-local" id="timerInput" />
+      <button onclick="postaviTajmer()">Postavi Tajmer</button>
+      <p id="timerStatus">Nema postavljenog tajmera.</p>
+    </div>
+  </div>
+  
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+
+    // Firebase konfiguracija
+    const firebaseConfig = {
+      apiKey: "AIzaSyDjiaaIxCXxoq7xeZGmiINZ1Jl3bp3WbaI",
+      authDomain: "petfeeder-a3ad9.firebaseapp.com",
+      databaseURL: "https://petfeeder-a3ad9-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "petfeeder-a3ad9",
+      storageBucket: "petfeeder-a3ad9.firebasestorage.app",
+      messagingSenderId: "797876743482",
+      appId: "1:797876743482:web:fe1241ff2b99c4578d3403",
+    };
+
+    // Inicijalizacija Firebase-a
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+
+    // Varijabla za kontrolu zaključavanja
+    let isLocked = false; // Hranilica je slobodna
+    const lockDuration = 10000; // Vrijeme zaključavanja u milisekundama (npr. 10 sekundi)
+
+    // Funkcija za otvaranje hranilice
+    window.otvoriHranilicu = function() {
+      if (isLocked) {
+        alert("Hranilica je zaključana! Molimo pričekajte prije sljedećeg otvaranja.");
+        return;
+      }
+
+      // Zaključaj hranilicu
+      isLocked = true;
+
+      const komandaRef = ref(database, "hranilica/komanda");
+      set(komandaRef, "open")
+        .then(() => {
+          alert("Komanda za otvaranje hranilice poslana!");
+
+          // Postavi timeout za otključavanje
+          setTimeout(() => {
+            isLocked = false; // Otključaj hranilicu
+            alert("Hranilica je sada slobodna za ponovno otvaranje.");
+          }, lockDuration);
+        })
+        .catch((error) => {
+          console.error("Greška pri slanju komande:", error);
+          alert("Došlo je do greške. Pokušajte ponovo.");
+          isLocked = false; // Otključaj hranilicu u slučaju greške
+        });
+      };
+
+      const messageRef = ref(database, "hranilica/lastOpenMessage");
+     
+      const messageContent = document.getElementById("messageContent");
+
+      onValue(messageRef, (snapshot) => {
+        if (snapshot.exists()) {
+            const message = snapshot.val();
+            console.log("Primljena poruka:", message);
+            messageContent.textContent = message;
+        } else {
+            console.log("Poruka ne postoji u Firebase-u.");
+            messageContent.textContent = "Nema podataka o otvaranju hranilice.";
+        }
+      });
+      const timerInput = document.getElementById("timerInput");
+const timerStatus = document.getElementById("timerStatus");
+
+// Funkcija za postavljanje tajmera
+window.postaviTajmer = function () {
+  const selectedTime = timerInput.value;
+  if (!selectedTime) {
+    alert("Molimo odaberite vrijeme za automatsko otvaranje.");
+    return;
+  }
+
+  // Pretvori odabrano vrijeme u UNIX timestamp
+  const timestamp = Math.floor(new Date(selectedTime).getTime() / 1000);
+
+  // Postavi tajmer u Firebase
+  const timerRef = ref(database, "hranilica/timer");
+  set(timerRef, timestamp)
+    .then(() => {
+      alert("Tajmer uspješno postavljen!");
+      timerStatus.textContent = `Tajmer postavljen za: ${new Date(timestamp * 1000).toLocaleString()}`;
+    })
+    .catch((error) => {
+      console.error("Greška pri postavljanju tajmera:", error);
+      alert("Došlo je do greške. Pokušajte ponovo.");
+    });
+};
+
+// Praćenje statusa tajmera u Firebase-u
+const timerRef = ref(database, "hranilica/timer");
+onValue(timerRef, (snapshot) => {
+  const timestamp = snapshot.val();
+  if (timestamp) {
+    timerStatus.textContent = `Tajmer postavljen za: ${new Date(timestamp * 1000).toLocaleString()}`;
+  } else {
+    timerStatus.textContent = "Nema postavljenog tajmera.";
+  }
+});
+      
+
+  </script>
+  <style>
+  .header {
+  display: flex; /* Aktivira Flexbox */
+  align-items: center; /* Poravnava naslov i dugme vertikalno */
+  justify-content: space-between; /* Raspoređuje prostor između naslova i dugmeta */
+  margin-bottom: 20px; /* Razmak ispod */
+}
+
+.header h1 {
+  margin: 0; /* Uklanja default margine naslova */
+  font-size: 30px;
+  color: #4CAF50;
+}
+
+.header button {
+  padding: 8px 16px;
+  font-size: 14px;
+  background-color: #467248;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.header button:hover {
+  background-color: #95bc97;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-image: url(pozadina\ da\ vidimo.jpg);
+  background-size: cover;
+  background-position: center;
+  
+  background-attachment: fixed;
+  margin: 0;
+  padding: 0;
+}
+.container {
+  max-width: 400px; /* Manja širina */
+  margin: 110px auto; /* Smanjen razmak od vrha */
+  padding: 15px; /* Manji unutrašnji razmak */
+  border-radius: 12px; /* Blago zaobljeni uglovi */
+  text-align: center;
+}
+
+h1 {
+  font-size: 30px; /* Manji naslov */
+  margin-top: 0;
+  margin-bottom: 10px; /* Manji razmak ispod naslova */
+  color: #4CAF50;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+button {
+  padding: 8px 16px;
+  font-size: 14px;
+  background-color: #467248;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin: 8px 0;
+}
+
+button:hover {
+  background-color: #95bc97;
+}
+
+#lastMessage, #timerSection {
+  margin-top: 15px; /* Smanji razmak između sekcija */
+  padding: 8px; /* Manji unutrašnji razmak */
+  background-color: rgba(188, 190, 169, 0.429); 
+  border-radius: 10px;
+ 
+}
+
+#messageContent, #timerStatus {
+  font-size: 16px; /* Smanji font */
+  font-weight: bold;
+  color: #444; /* Tamnija nijansa za tekst */
+  margin-top: 8px;
+}
+
+input[type="datetime-local"] {
+  padding: 6px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-right: 5px;
+}
+
+</style>
+</body>
+</html>
